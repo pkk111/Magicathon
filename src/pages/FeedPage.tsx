@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import ReactionBar from '../components/View/ReactionBar'
 import { getDisplayUrl } from '../lib/api'
+import { getSessionId } from '../lib/session'
 import { shareMemeUrl } from '../lib/share'
 
 interface FeedMeme {
@@ -10,6 +11,7 @@ interface FeedMeme {
   totalReactions: number
   createdAt: string
   sessionId: string | null
+  userReaction: string | null
 }
 
 export default function FeedPage() {
@@ -20,7 +22,8 @@ export default function FeedPage() {
 
   const fetchFeed = async (pageNum: number) => {
     try {
-      const res = await fetch(`/api/feed?page=${pageNum}&limit=20`)
+      const sessionId = getSessionId()
+      const res = await fetch(`/api/getAllMemes?page=${pageNum}&limit=20&sessionId=${sessionId}`)
       if (!res.ok) throw new Error('Failed to load')
       const data = await res.json()
       setMemes(prev => pageNum === 1 ? data.memes : [...prev, ...data.memes])
@@ -116,6 +119,7 @@ function FeedCard({ meme, onReactionsUpdate }: { meme: FeedMeme; onReactionsUpda
             <ReactionBar
               memeId={meme.memeId}
               reactions={meme.reactions}
+              initialUserReaction={meme.userReaction}
               onReactionsUpdate={onReactionsUpdate}
             />
           </div>

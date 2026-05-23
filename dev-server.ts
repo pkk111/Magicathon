@@ -97,8 +97,8 @@ app.post('/api/react', async (req, res) => {
 })
 
 // Feed
-app.get('/api/feed', async (req, res) => {
-  const handler = await loadHandler('./api/feed.ts')
+app.get('/api/getAllMemes', async (req, res) => {
+  const handler = await loadHandler('./api/getAllMemes.ts')
   handler(req, res)
 })
 

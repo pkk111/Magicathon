@@ -5,11 +5,12 @@ import { REACTION_EMOJIS, parseReactions } from '../../lib/reactions'
 interface Props {
   memeId: string
   reactions: Record<string, number>
+  initialUserReaction?: string | null
   onReactionsUpdate: (reactions: Record<string, number>) => void
 }
 
-export default function ReactionBar({ memeId, reactions, onReactionsUpdate }: Props) {
-  const [selected, setSelected] = useState<string | null>(null)
+export default function ReactionBar({ memeId, reactions, initialUserReaction, onReactionsUpdate }: Props) {
+  const [selected, setSelected] = useState<string | null>(initialUserReaction || null)
   const [animating, setAnimating] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const fetched = useRef(false)
@@ -17,6 +18,7 @@ export default function ReactionBar({ memeId, reactions, onReactionsUpdate }: Pr
   const parsed = parseReactions(reactions)
 
   useEffect(() => {
+    if (initialUserReaction !== undefined) return
     if (fetched.current) return
     fetched.current = true
 
