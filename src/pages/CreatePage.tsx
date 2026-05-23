@@ -6,6 +6,7 @@ import MemeEditor from '../components/Editor/MemeEditor'
 import { useUpload } from '../hooks/useUpload'
 import { useSuggestions } from '../hooks/useSuggestions'
 import { getSessionId } from '../lib/session'
+import { MEME_THEMES } from '../lib/themes'
 import type { MemeSuggestion } from '../../shared/types'
 
 type Step = 'upload' | 'suggesting' | 'pick' | 'edit'
@@ -17,13 +18,25 @@ export default function CreatePage() {
   const [step, setStep] = useState<Step>('upload')
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [posting, setPosting] = useState(false)
+  const [selectedTheme, setSelectedTheme] = useState(MEME_THEMES[0]!.id)
+  const [customPrompt, setCustomPrompt] = useState('')
+  const [selectedFile, setSelectedFile] = useState<Blob | null>(null)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (uploadResult && step === 'upload') {
+  const handleFileSelected = (file: Blob) => {
+    setSelectedFile(file)
+    setPreviewUrl(URL.createObjectURL(file))
+  }
+
+  const handleGenerate = async () => {
+    if (!selectedFile) return
+    if (selectedTheme === 'custom' && !customPrompt.trim()) return
+    const result = await upload(selectedFile)
+    if (result) {
       setStep('suggesting')
-      suggest(uploadResult.imageUrl, uploadResult.imageId)
+      suggest(result.imageUrl, result.imageId, selectedTheme, selectedTheme === 'custom' ? customPrompt.trim() : undefined)
     }
-  }, [uploadResult, step, suggest])
+  }
 
   useEffect(() => {
     if (suggestData && step === 'suggesting') {
@@ -102,14 +115,75 @@ export default function CreatePage() {
 
   if (step === 'upload') {
     return (
-      <div className="flex flex-col items-center justify-center min-h-dvh p-6">
+      <div className="flex flex-col items-center min-h-dvh p-6 pt-16">
         <h1 className="text-5xl font-black tracking-tight mb-2">
           Magic<span className="text-acid">thon</span>
         </h1>
-        <p className="mb-8 text-paper/70 text-center max-w-sm">
-          Upload a photo and get 6 AI-generated memes instantly.
+        <p className="mb-6 text-paper/70 text-center max-w-sm">
+          Upload a photo and get AI-generated memes instantly.
         </p>
-        <UploadZone onFile={upload} uploading={uploading} />
+
+        {!selectedFile ? (
+          <UploadZone onFile={handleFileSelected} uploading={false} />
+        ) : (
+          <div className="w-full max-w-lg">
+            <div className="relative mb-4">
+              <img
+                src={previewUrl!}
+                alt="Selected"
+                className="w-full rounded-lg aspect-video object-cover"
+              />
+              <button
+                onClick={() => { setSelectedFile(null); setPreviewUrl(null) }}
+                className="absolute top-2 right-2 w-8 h-8 bg-ink/80 rounded-full flex items-center justify-center text-paper/80 hover:text-paper"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="mb-4">
+              <p className="text-sm text-paper/60 mb-2">Choose a meme style:</p>
+              <div className="grid grid-cols-2 gap-2">
+                {MEME_THEMES.map((theme) => (
+                  <button
+                    key={theme.id}
+                    onClick={() => setSelectedTheme(theme.id)}
+                    className={`p-3 rounded-lg border text-left transition-all ${
+                      selectedTheme === theme.id
+                        ? 'border-acid bg-acid/10'
+                        : 'border-paper/15 hover:border-paper/40'
+                    }`}
+                  >
+                    <span className="text-lg">{theme.emoji}</span>
+                    <span className="ml-2 text-sm font-medium">{theme.name}</span>
+                    <p className="text-xs text-paper/50 mt-1">{theme.description}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {selectedTheme === 'custom' && (
+              <div className="mb-4">
+                <textarea
+                  value={customPrompt}
+                  onChange={(e) => setCustomPrompt(e.target.value)}
+                  placeholder="Describe the humor style you want... e.g. 'Make it a Gordon Ramsay roast' or 'Anime protagonist inner monologue'"
+                  className="w-full p-3 rounded-lg border border-paper/20 bg-paper/5 text-paper placeholder:text-paper/40 text-sm resize-none focus:outline-none focus:border-acid"
+                  rows={3}
+                />
+              </div>
+            )}
+
+            <button
+              onClick={handleGenerate}
+              disabled={uploading || (selectedTheme === 'custom' && !customPrompt.trim())}
+              className="w-full py-3 bg-acid text-ink font-bold rounded text-sm uppercase tracking-wide disabled:opacity-50"
+            >
+              {uploading ? '⏳ Generating...' : '✨ Generate Meme'}
+            </button>
+          </div>
+        )}
+
         {uploadError && <p className="mt-4 text-red-400 text-sm">{uploadError}</p>}
       </div>
     )
@@ -125,7 +199,7 @@ export default function CreatePage() {
           <div className="mt-6 flex flex-col items-center gap-3">
             <p className="text-red-400 text-sm">{suggestError}</p>
             <button
-              onClick={() => uploadResult && retry(uploadResult.imageUrl, uploadResult.imageId)}
+              onClick={() => uploadResult && retry(uploadResult.imageUrl, uploadResult.imageId, selectedTheme, selectedTheme === 'custom' ? customPrompt.trim() : undefined)}
               className="px-4 py-2 bg-acid text-ink rounded font-bold text-sm"
             >
               Try Again

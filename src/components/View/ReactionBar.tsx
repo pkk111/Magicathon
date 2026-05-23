@@ -96,7 +96,7 @@ export default function ReactionBar({ memeId, reactions, onReactionsUpdate }: Pr
             ${submitting ? 'opacity-70' : ''}
           `}
         >
-          <span className="text-lg">{emoji}</span>
+          <span className="text-lg">{submitting && selected === key ? '⏳' : emoji}</span>
           <span>{parsed[key] || 0}</span>
         </button>
       ))}

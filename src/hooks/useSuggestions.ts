@@ -11,14 +11,14 @@ export function useSuggestions() {
   const [error, setError] = useState<string | null>(null)
   const [data, setData] = useState<SuggestionsResult | null>(null)
 
-  const suggest = useCallback(async (imageUrl: string, imageId: string) => {
+  const suggest = useCallback(async (imageUrl: string, imageId: string, theme?: string, customPrompt?: string) => {
     setLoading(true)
     setError(null)
     try {
       const res = await fetch('/api/suggest', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ imageUrl, imageId }),
+        body: JSON.stringify({ imageUrl, imageId, theme, customPrompt }),
       })
 
       if (!res.ok) {
@@ -40,8 +40,8 @@ export function useSuggestions() {
     }
   }, [])
 
-  const retry = useCallback((imageUrl: string, imageId: string) => {
-    return suggest(imageUrl, imageId)
+  const retry = useCallback((imageUrl: string, imageId: string, theme?: string, customPrompt?: string) => {
+    return suggest(imageUrl, imageId, theme, customPrompt)
   }, [suggest])
 
   return { suggest, loading, error, data, retry }

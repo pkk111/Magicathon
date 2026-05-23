@@ -71,7 +71,7 @@ export default function FeedPage() {
       <div className="max-w-4xl mx-auto">
         <h1 className="text-2xl font-bold mb-6 pt-4">Meme Feed</h1>
 
-        <div className="grid gap-6" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))' }}>
+        <div className="grid gap-6 max-w-lg md:max-w-2xl lg:max-w-3xl mx-auto">
           {memes.map((meme) => (
             <div key={meme.memeId} className="bg-paper/5 rounded-lg overflow-hidden border border-paper/10">
               <a href={`/m/${meme.memeId}`}>

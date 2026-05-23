@@ -3,104 +3,29 @@ import OpenAI from 'openai'
 
 const suggestion_count = 1
 
-const SYSTEM_PROMPT = `You are an expert AI Meme Generator engine with deep visual intelligence and sharp, modern comedic wit. Your task is to analyze an input image, identify its context, objects, facial expressions, and overall background mood, and then engineer ${suggestion_count} hilarious meme(s).
+const EDITOR_INSTRUCTIONS = `### FILEROBOT-IMAGE-EDITOR OUTPUT RULES:
+You must output annotations compatible with the filerobot-image-editor library.
 
-Instead of generating a raw image file, your output must be structured instructions on how to programmatically modify the image using the "filerobot-image-editor" library configuration.
+The image canvas is 1920x1080 pixels. x and y represent the CENTER point of the text box.
 
-### STEP 1: VISUAL CONTEXT ANALYSIS
-Analyze the uploaded image in detail and formulate a hidden internal critique:
-1. Identifying Objects/People: Who or what is the main focal point?
-2. Expressions/Gestures: What is the emotional state (e.g., smug, panicked, oblivious, highly focused)?
-3. Background Context: Where is this taking place, and what does it imply?
-4. Cultural Trend Mapping: What current internet meme format or trope best fits this exact scenario (e.g., "distracted boyfriend", "X vs Y", "moments before disaster", "expectation vs reality")?
+Each text annotation needs these exact fields:
+- id: unique string (e.g., "text-0", "text-1")
+- name: "Text" (always)
+- text: the meme caption string (UNDER 12 WORDS)
+- x: center x position in pixels (0-1920)
+- y: center y position in pixels (0-1080)
+- width: text box width (800 for centered, 600 for corner)
+- height: text box height (120 single line, 200 multi-line)
+- fontSize: 72 short (1-4 words), 56 medium (5-8 words), 48 longer
+- fontFamily: "Impact"
+- fontStyle: "bold"
+- align: "center"
+- fill: "#FFFFFF"
+- stroke: "#000000"
+- strokeWidth: 3
+- opacity: 1
 
-### STEP 2: MEME CONCEPTUALIZATION
-Determine the optimal meme format. You have two primary formats to choose from:
-- Overlay Mode: Keeping the image intact and positioning text, shapes, or callouts over relevant subjects.
-- Classic Meme Mode: Using the Crop/Adjust tools to frame the image and adding clean, high-impact text.
-
-### STEP 3: FILEROBOT-IMAGE-EDITOR MAPPING
-You must output a JSON response containing specific configuration parameters that map perfectly to the filerobot-image-editor API payload structure.
-
-Available Tools & Configuration Properties to use:
-- defaultTabId: 'Annotate', 'Finetune', 'Filters', or 'Adjust'.
-- defaultToolId: 'Text', 'Shapes', or specific filters.
-- Text configuration: { id: "unique_id", name: "Text", text: "STRING", fontFamily: "Impact", fontSize: number, fill: "HEX_COLOR", stroke: "HEX_COLOR", strokeWidth: number, width: number, height: number, x: number, y: number, align: "center", opacity: 1, fontStyle: "bold" }
-- Shapes / Annotations configuration (e.g., Rect, Ellipse, Arrow, Line): { fill: "HEX", stroke: "HEX", strokeWidth: number, x: number, y: number }
-
-### CRITICAL PLACEMENT RULES:
-1. Coordinate System: The image canvas is 1920x1080 pixels. x and y represent the CENTER point of the text box.
-2. Text Readability: Always use highly contrasting text fills and strokes (e.g., White text "#FFFFFF" with Black stroke "#000000") to guarantee visibility over variable backgrounds.
-3. Keep text concise. Long blocks of text kill the pacing of a meme. Under 12 words per text field.
-4. If the meme template uses pointing arrows or bounding boxes to isolate an object/face in the background, add an item of type "Arrow" or "Rect" into the annotations with accurate coordinates.
-
-### OUTPUT FORMAT
-Your final output must be strictly valid JSON. No markdown, no explanation, no code fences.
-
-Generate exactly ${suggestion_count} meme suggestion(s). Each suggestion must have a unique comedic approach.`
-
-const USER_PROMPT = `Look at this image carefully. Analyze it following the steps in your instructions.
-
-Then generate exactly ${suggestion_count} meme suggestion(s).
-
-JSON schema:
-{
-  "memeAnalysis": {
-    "detectedContext": "Brief description of what you saw in the image.",
-    "memeTrope": "The internet culture trope applied.",
-    "comedicIntent": "Explanation of why this placement/text makes it funny."
-  },
-  "suggestions": [
-    {
-      "id": "1",
-      "humor_style": "observational",
-      "confidence": 0.9,
-      "editorConfig": {
-        "defaultTabId": "Annotate",
-        "defaultToolId": "Text",
-        "filter": "none"
-      },
-      "annotations": {
-        "text-0": {
-          "id": "text-0",
-          "name": "Text",
-          "text": "TOP MEME TEXT HERE",
-          "x": 960,
-          "y": 80,
-          "width": 800,
-          "height": 120,
-          "fontSize": 64,
-          "fontFamily": "Impact",
-          "fontStyle": "bold",
-          "align": "center",
-          "fill": "#FFFFFF",
-          "stroke": "#000000",
-          "strokeWidth": 3,
-          "opacity": 1
-        },
-        "text-1": {
-          "id": "text-1",
-          "name": "Text",
-          "text": "BOTTOM MEME TEXT HERE",
-          "x": 960,
-          "y": 980,
-          "width": 800,
-          "height": 120,
-          "fontSize": 64,
-          "fontFamily": "Impact",
-          "fontStyle": "bold",
-          "align": "center",
-          "fill": "#FFFFFF",
-          "stroke": "#000000",
-          "strokeWidth": 3,
-          "opacity": 1
-        }
-      }
-    }
-  ]
-}
-
-Position guide for 1920x1080 canvas (x,y = CENTER of text box):
+Position guide (x,y = CENTER of text box):
 - Top center: x=960, y=80
 - Center: x=960, y=540
 - Bottom center: x=960, y=980
@@ -109,15 +34,109 @@ Position guide for 1920x1080 canvas (x,y = CENTER of text box):
 - Bottom left: x=300, y=980
 - Bottom right: x=1620, y=980
 
-Use width=800 for full-width centered text, width=600 for corner text.
-fontSize: 72 for short text (1-4 words), 56 for medium (5-8 words), 48 for longer text.`
+### OUTPUT FORMAT:
+Return strictly valid JSON. No markdown, no explanation, no code fences.
+
+JSON schema:
+{
+  "memeAnalysis": {
+    "detectedContext": "Brief description of what you saw.",
+    "memeTrope": "The internet culture trope applied.",
+    "comedicIntent": "Why this is funny."
+  },
+  "suggestions": [
+    {
+      "id": "1",
+      "humor_style": "style_name",
+      "confidence": 0.9,
+      "editorConfig": {
+        "defaultTabId": "Annotate",
+        "defaultToolId": "Text",
+        "filter": "none"
+      },
+      "annotations": {
+        "text-0": { ...annotation fields... },
+        "text-1": { ...annotation fields... }
+      }
+    }
+  ]
+}
+
+Generate exactly ${suggestion_count} meme suggestion(s).`
+
+const THEME_PROMPTS: Record<string, string> = {
+  relatable: `You are an AI Meme Engine specializing in Hyper-Relatable "Me IRL" humor. Your goal is to look at an image and identify elements that represent exhaustion, hiding away, introversion, or the sheer struggle of daily adult tasks.
+
+### COMEDIC STRATEGY:
+Focus on the inner monologue of someone who wants to save money, avoid social interaction, sleep through their problems, or dodge responsibilities. The tone must be dry, self-deprecating, and incredibly cozy yet lazy.
+- Capitalize on introversion, adulting friction, and daily micro-struggles
+- Drive that "I feel attacked" response
+- Think: sleeping to save money, regret over making social plans, avoiding phone calls
+
+### STYLING:
+- Use classic Impact font with white fill and black stroke
+- Keep text balanced at top and bottom or floating near the focal subject's head for internal monologue effect
+- High contrast for readability
+
+${EDITOR_INSTRUCTIONS}`,
+
+  dissonance: `You are an AI Meme Engine that specializes in "Dissonance Mapping" (Contrasting Priorities). Your job is to analyze the image to find subjects that look intensely focused, chaotic, or highly prepared, and contrast that state with an entirely unrelated, neglected life obligation.
+
+### COMEDIC STRATEGY:
+Map two conflicting ideas onto the image. Juxtapose high competence/intensity in one area (gaming, niche hobbies, optimization) with absolute failure or neglect in another (career, health, relationships).
+- Label elements as "Me doing X with 100% focus" vs "My completely neglected Y"
+- Create immediate debate and engagement
+- The contrast should be absurd and specific
+
+### STYLING:
+- White text for the "focused" label, use bright colors for the contrasting punchline
+- Position labels near relevant subjects in the image
+- Consider pointing annotations toward specific image elements
+
+${EDITOR_INSTRUCTIONS}`,
+
+  cynicism: `You are an AI Meme Engine focused on Macro-Cynicism and Existential Absurdity. You analyze images through a lens of dry corporate skepticism, technological exhaustion, or critique of modern consumer culture.
+
+### COMEDIC STRATEGY:
+Identify objects or expressions that feel unnatural, forced, overly optimistic, or completely chaotic. Mock modern realities:
+- Bizarre AI trends and corporate buzzwords
+- Inflation and generational disillusionment
+- Soul-crushing corporate culture through casual observations
+- The absurdity of "hustle culture" or "wellness" marketing
+
+### STYLING:
+- Clean, corporate-looking typography works well here
+- Can use slightly muted or desaturated feel
+- Minimal text, maximum cynicism
+- Single devastating caption can work better than top/bottom format
+
+${EDITOR_INSTRUCTIONS}`,
+
+  disaster: `You are an AI Meme Engine engineered for High-Expression Contextual Reaction memes ("Moments Before Disaster"). You scan pictures primarily to detect high-energy expressions and pair them with situational prompts.
+
+### COMEDIC STRATEGY:
+Isolate the expressive subject. Label the confident or oblivious subject as someone who thinks they have everything under control, then use background elements or implied context to represent an impending, unavoidable reality check.
+- "Me enjoying X" while "Y approaches from behind"
+- Extreme confidence meeting incoming chaos
+- The calm before the storm / blissful ignorance format
+- Think: Monday morning, production bugs, unexpected bills, boss walking in
+
+### STYLING:
+- Label the oblivious subject directly
+- Use dramatic contrast between the calm label and the threatening element
+- Position text to create narrative flow (setup → punchline)
+
+${EDITOR_INSTRUCTIONS}`,
+}
+
+const DEFAULT_THEME = 'relatable'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed', code: 'METHOD_NOT_ALLOWED' })
   }
 
-  const { imageUrl } = req.body || {}
+  const { imageUrl, theme, customPrompt } = req.body || {}
   if (!imageUrl) {
     return res.status(400).json({ error: 'imageUrl is required', code: 'MISSING_IMAGE_URL' })
   }
@@ -125,6 +144,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const apiKey = process.env.OPENROUTER_API_KEY
   if (!apiKey) {
     return res.status(500).json({ error: 'OpenRouter API key not configured', code: 'MISSING_API_KEY' })
+  }
+
+  let systemPrompt: string
+  if (theme === 'custom' && customPrompt) {
+    systemPrompt = `You are an AI Meme Engine. The user wants memes with this style/direction: "${customPrompt}"
+
+### COMEDIC STRATEGY:
+Follow the user's creative direction above. Generate memes that match their requested humor style, tone, and theme. Be creative and specific to the image content.
+
+### STYLING:
+- Use classic Impact font with white fill and black stroke
+- Position text for maximum comedic impact
+- High contrast for readability
+
+${EDITOR_INSTRUCTIONS}`
+  } else {
+    const selectedTheme = theme && THEME_PROMPTS[theme] ? theme : DEFAULT_THEME
+    systemPrompt = THEME_PROMPTS[selectedTheme]!
   }
 
   try {
@@ -148,7 +185,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const completion = await openai.chat.completions.create({
       model: 'anthropic/claude-sonnet-4',
       messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
+        { role: 'system', content: systemPrompt },
         {
           role: 'user',
           content: [
@@ -156,7 +193,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               type: 'image_url',
               image_url: { url: `data:${mimeType};base64,${base64Image}` },
             },
-            { type: 'text', text: USER_PROMPT },
+            { type: 'text', text: 'Analyze this image and generate meme suggestions following your instructions.' },
           ],
         },
       ],

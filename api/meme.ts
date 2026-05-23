@@ -17,13 +17,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     const memeId = nanoid(10)
-    const defaultReactions = '{"laugh":0,"fire":0,"cry-laugh":0,"100":0,"skull":0,"heart":0}'
+    const reactions = { laugh: 0, fire: 0, 'cry-laugh': 0, '100': 0, skull: 0, heart: 0 }
 
-    await sql.unsafe(
-      `INSERT INTO memes (id, image_url, exported_png_url, text_fields, reactions, total_reactions, session_id)
-       VALUES ($1, $2, $3, $4::jsonb, $5::jsonb, 0, $6)`,
-      [memeId, imageUrl, exportedPngUrl, JSON.stringify(textFields || []), defaultReactions, sessionId || null]
-    )
+    await sql`
+      INSERT INTO memes (id, image_url, exported_png_url, text_fields, reactions, total_reactions, session_id)
+      VALUES (
+        ${memeId},
+        ${imageUrl},
+        ${exportedPngUrl},
+        ${sql.json(textFields || [])},
+        ${sql.json(reactions)},
+        0,
+        ${sessionId || null}
+      )
+    `
 
     const baseUrl = process.env.VERCEL_URL
       ? `https://${process.env.VERCEL_URL}`
