@@ -2,15 +2,17 @@ import type { VercelRequest, VercelResponse } from '@vercel/node'
 import OpenAI from 'openai'
 import sharp from 'sharp'
 
-const SYSTEM_PROMPT = `Analyze this image. Identify the main subject and setting.
+const SYSTEM_PROMPT = `You are a JSON API. Look at this image and return exactly 8 meme ideas.
 
-Suggest 8 meme directions. Each has 3 SHORT fields:
-- "summary": 2-5 word label
-- "prompt": image generation prompt (max 50 words). Describe subject + scene + style. Include "with empty white caption bars at top and bottom". NO text/words in image.
-- "textPrompt": what kind of caption to write (max 20 words). Tone and humor style only.
+Rules:
+- Output MUST be valid JSON. Nothing else. No markdown. No code fences. No explanation.
+- Each prompt must be under 40 words
+- Each textPrompt must be under 15 words
+- No special characters, no emojis, use only basic ASCII in all values
+- Include "with empty white caption bars at top and bottom" in every prompt
 
-Keep prompts concise. JSON only, no markdown, no emojis:
-{"suggestions":[{"summary":"...","prompt":"...","textPrompt":"..."}]}`
+Output this exact structure with 8 items:
+{"suggestions":[{"summary":"2-4 words","prompt":"visual scene description under 40 words","textPrompt":"humor direction under 15 words"}]}`
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
@@ -52,7 +54,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         },
       ],
       temperature: 0.5,
-      max_tokens: 2000,
+      max_tokens: 3000,
     })
 
     const t2 = Date.now()

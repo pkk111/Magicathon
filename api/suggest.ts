@@ -89,6 +89,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const top = c.top || c.topText?.text || c.topText || ''
       const bottom = c.bottom || c.bottomText?.text || c.bottomText || ''
       const color = c.color || '#FFFFFF'
+      const fontSize = c.fontSize || getFontSize(Math.max(top.split(' ').length, bottom.split(' ').length))
       return {
         id: String(i + 1),
         humor_style: 'custom',
@@ -98,13 +99,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           'text-0': {
             id: 'text-0', name: 'Text', text: top,
             x: 960, y: 30, width: 800, height: 150,
-            fontSize: 96, fontFamily: 'Impact', fontStyle: 'bold', align: 'center',
+            fontSize, fontFamily: 'Impact', fontStyle: 'bold', align: 'center',
             fill: color, stroke: '#000000', strokeWidth: 4, opacity: 1,
           },
           'text-1': {
             id: 'text-1', name: 'Text', text: bottom,
             x: 960, y: 820, width: 800, height: 150,
-            fontSize: 96, fontFamily: 'Impact', fontStyle: 'bold', align: 'center',
+            fontSize, fontFamily: 'Impact', fontStyle: 'bold', align: 'center',
             fill: color, stroke: '#000000', strokeWidth: 4, opacity: 1,
           },
         },
@@ -120,5 +121,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     console.error('Suggest error:', e)
     return res.status(500).json({ error: 'Something went wrong. Please try again.' })
   }
+}
+
+function getFontSize(wordCount: number): number {
+  if (wordCount <= 3) return 120
+  if (wordCount <= 5) return 96
+  if (wordCount <= 8) return 72
+  return 56
 }
 
