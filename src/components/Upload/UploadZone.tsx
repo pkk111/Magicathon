@@ -89,7 +89,7 @@ export default function UploadZone({ onFile, uploading }: Props) {
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/*"
+            accept="image/png,image/jpeg,image/webp,image/gif"
             onChange={(e) => handleFiles(e.target.files)}
             className="hidden"
           />

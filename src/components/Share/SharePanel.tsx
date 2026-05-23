@@ -74,7 +74,7 @@ export default function SharePanel({ blob, previewUrl, imageUrl, onBack }: Props
   }
 
   return (
-    <div className="min-h-dvh bg-ink flex flex-col items-center p-6 pt-16">
+    <div className="min-h-dvh bg-ink flex flex-col items-center p-6">
       <div className="w-full max-w-lg">
         <button onClick={onBack} className="text-paper/60 text-sm mb-4">
           ← Back to editor

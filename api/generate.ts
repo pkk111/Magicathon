@@ -98,8 +98,7 @@ Output: one image, purely visual, no characters/letters/words anywhere.`,
     })
   } catch (e) {
     console.error('Generate error:', e)
-    const message = e instanceof Error ? e.message : 'Image generation failed'
-    return res.status(500).json({ error: message })
+    return res.status(500).json({ error: 'Something went wrong. Please try again.' })
   }
 }
 

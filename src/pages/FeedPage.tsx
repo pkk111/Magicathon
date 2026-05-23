@@ -46,7 +46,7 @@ export default function FeedPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-dvh pt-14">
+      <div className="flex items-center justify-center min-h-dvh">
         <div className="w-8 h-8 border-3 border-acid border-t-transparent rounded-full animate-spin" />
       </div>
     )
@@ -54,7 +54,7 @@ export default function FeedPage() {
 
   if (memes.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-dvh pt-14 p-6">
+      <div className="flex flex-col items-center justify-center min-h-dvh p-6">
         <p className="text-4xl mb-3">🎭</p>
         <p className="text-paper/70 text-lg font-medium">No memes yet</p>
         <p className="text-paper/50 text-sm mt-1">Be the first to create and share one!</p>
@@ -66,7 +66,7 @@ export default function FeedPage() {
   }
 
   return (
-    <div className="relative min-h-dvh pt-14 pb-8 px-4 overflow-hidden">
+    <div className="relative min-h-dvh pb-8 px-4 overflow-hidden">
       <img src="/feed-bg.png" alt="" className="absolute inset-0 w-full h-full object-cover" />
       <div className="absolute inset-0 bg-ink/70" />
       <div className="relative z-10 max-w-4xl mx-auto">

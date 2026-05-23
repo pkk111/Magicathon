@@ -47,12 +47,19 @@ export default function CreatePage() {
     }
   }, [promptSuggestions, step])
 
-  const handlePromptSelected = (suggestion: PromptSuggestion) => {
-    if (!uploadResult) return
-    setChosenPrompt(suggestion.prompt)
-    setChosenTextPrompt(suggestion.textPrompt)
+  const [selectedPrompt, setSelectedPrompt] = useState<PromptSuggestion | null>(null)
+
+  const handlePromptSelected = (suggestion: PromptSuggestion | null) => {
+    setSelectedPrompt(suggestion)
+  }
+
+  const handleStartGeneration = (editedPrompt?: string) => {
+    if (!uploadResult || !selectedPrompt) return
+    const prompt = editedPrompt || selectedPrompt.prompt
+    setChosenPrompt(prompt)
+    setChosenTextPrompt(selectedPrompt.textPrompt)
     setStep('generating')
-    generate(uploadResult.imageUrl, suggestion.prompt)
+    generate(uploadResult.imageUrl, prompt)
   }
 
   const handleCustomPrompt = (prompt: string) => {
@@ -111,9 +118,9 @@ export default function CreatePage() {
 
   if (step === 'upload') {
     return (
-      <div className="min-h-dvh pt-14">
-        {/* Hero Banner */}
-        <div className="relative w-full h-48 md:h-64 overflow-hidden">
+      <div className="min-h-dvh">
+        {/* Hero Banner — extends behind nav bar */}
+        <div className="relative w-full h-56 md:h-72 overflow-hidden">
           <img
             src="/hero-banner.png"
             alt=""
@@ -175,7 +182,9 @@ export default function CreatePage() {
       <PromptPicker
         previewUrl={previewUrl}
         suggestions={promptSuggestions}
+        selectedPrompt={selectedPrompt}
         onSelect={handlePromptSelected}
+        onGenerate={handleStartGeneration}
         onCustom={handleCustomPrompt}
         onBack={() => setStep('upload')}
       />
@@ -193,7 +202,7 @@ export default function CreatePage() {
 
   if (step === 'choose-image' && generateResults.length > 0) {
     return (
-      <div className="relative min-h-dvh pt-16 pb-10 px-6 overflow-hidden">
+      <div className="relative min-h-dvh pb-10 px-6 overflow-hidden">
         <img src="/analyzing-bg.png" alt="" className="absolute inset-0 w-full h-full object-cover" />
         <div className="absolute inset-0 bg-ink/60" />
         <div className="relative z-10 max-w-4xl mx-auto">
@@ -248,7 +257,7 @@ export default function CreatePage() {
 
   if (step === 'pick' && suggestData && memeImageUrl) {
     return (
-      <div className="relative min-h-dvh py-8 pt-16 overflow-hidden">
+      <div className="relative min-h-dvh py-8 overflow-hidden">
         <img src="/analyzing-bg.png" alt="" className="absolute inset-0 w-full h-full object-cover" />
         <div className="absolute inset-0 bg-ink/60" />
         <div className="relative z-10">
@@ -430,7 +439,7 @@ function AnalyzingStep({ error, onRetry }: { error: string | null; onRetry: () =
         </p>
         {(error || timedOut) && (
           <div className="mt-6 flex flex-col items-center gap-3">
-            <p className="text-red-400 text-sm">{timedOut ? 'Taking too long — try again' : error}</p>
+            <p className="text-red-400 text-sm">Something went wrong. Please try again.</p>
             <button onClick={onRetry} className="px-4 py-2 bg-acid text-ink rounded-xl font-bold text-sm">
               Try Again
             </button>
@@ -497,18 +506,33 @@ function GeneratingStep({ error, onRetry }: { error: string | null; onRetry: () 
   )
 }
 
-function PromptPicker({ previewUrl, suggestions, onSelect, onCustom, onBack }: {
+function PromptPicker({ previewUrl, suggestions, selectedPrompt, onSelect, onGenerate, onCustom, onBack }: {
   previewUrl: string | null
   suggestions: PromptSuggestion[]
+  selectedPrompt: PromptSuggestion | null
   onSelect: (s: PromptSuggestion) => void
+  onGenerate: (editedPrompt?: string) => void
   onCustom: (prompt: string) => void
   onBack: () => void
 }) {
   const [customInput, setCustomInput] = useState('')
   const [showCustom, setShowCustom] = useState(false)
+  const [editedPrompt, setEditedPrompt] = useState('')
+
+  const handleSelectStyle = (s: PromptSuggestion) => {
+    setShowCustom(false)
+    setCustomInput('')
+    setEditedPrompt(s.prompt)
+    onSelect(s)
+  }
+
+  const handleOpenCustom = () => {
+    setShowCustom(true)
+    onSelect(null as any)
+  }
 
   return (
-    <div className="relative min-h-dvh pt-14 px-6 pb-10 overflow-hidden">
+    <div className="relative min-h-dvh px-6 pb-28 overflow-hidden">
       <img src="/analyzing-bg.png" alt="" className="absolute inset-0 w-full h-full object-cover" />
       <div className="absolute inset-0 bg-ink/60" />
       <div className="relative z-10 max-w-lg mx-auto pt-8">
@@ -516,34 +540,50 @@ function PromptPicker({ previewUrl, suggestions, onSelect, onCustom, onBack }: {
           ← Change image
         </button>
 
-        {/* Image on top */}
         {previewUrl && (
           <div className="rounded-xl overflow-hidden border border-white/10 mb-6">
             <img src={previewUrl} alt="Your photo" className="w-full aspect-video object-cover" />
           </div>
         )}
 
-        {/* Suggestions below */}
         <h2 className="text-2xl font-bold mb-1">Choose a meme style</h2>
-        <p className="text-paper/50 text-sm mb-5">AI analyzed your photo. Pick a direction:</p>
+        <p className="text-paper/50 text-sm mb-5">Pick a direction, edit if you want, then Generate:</p>
 
         <div className="grid grid-cols-2 gap-2 mb-5">
           {suggestions.map((s, i) => (
             <button
               key={i}
-              onClick={() => onSelect(s)}
-              className="group p-3 rounded-xl border border-white/10 bg-ink-card hover:border-acid/50 hover:bg-acid/5 transition-all text-left"
-              title={s.prompt}
+              onClick={() => handleSelectStyle(s)}
+              className={`p-3 rounded-xl border transition-all text-left ${
+                selectedPrompt === s && !showCustom
+                  ? 'border-acid bg-acid/15'
+                  : 'border-white/10 bg-ink-card hover:border-acid/50 hover:bg-acid/5'
+              }`}
             >
-              <p className="text-base font-semibold text-paper/90 group-hover:text-acid transition-colors">{s.summary}</p>
+              <p className={`text-base font-semibold transition-colors ${
+                selectedPrompt === s && !showCustom ? 'text-acid' : 'text-paper/90'
+              }`}>{s.summary}</p>
             </button>
           ))}
         </div>
 
+        {/* Show editable prompt when a style is selected */}
+        {selectedPrompt && !showCustom && (
+          <div className="mb-5">
+            <p className="text-xs text-paper/40 mb-2">Edit prompt (optional):</p>
+            <textarea
+              value={editedPrompt}
+              onChange={(e) => setEditedPrompt(e.target.value)}
+              className="w-full p-3 rounded-xl border border-white/10 bg-ink-card text-paper text-sm resize-none focus:outline-none focus:border-acid/50"
+              rows={3}
+            />
+          </div>
+        )}
+
         <div className="border-t border-white/5 pt-4">
           {!showCustom ? (
             <button
-              onClick={() => setShowCustom(true)}
+              onClick={handleOpenCustom}
               className="w-full p-3 rounded-xl border border-dashed border-white/15 text-sm text-paper/40 hover:border-acid/40 hover:text-acid/70 transition-all text-center"
             >
               + Define your own meme style
@@ -569,6 +609,19 @@ function PromptPicker({ previewUrl, suggestions, onSelect, onCustom, onBack }: {
           )}
         </div>
       </div>
+
+      {selectedPrompt && !showCustom && (
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-ink/95 backdrop-blur-md border-t border-white/5 z-20">
+          <div className="max-w-lg mx-auto">
+            <button
+              onClick={() => onGenerate(editedPrompt)}
+              className="w-full py-3.5 bg-acid text-ink font-bold rounded-xl text-sm uppercase tracking-wide hover:brightness-110 transition-all shadow-lg shadow-acid/20"
+            >
+              Generate Meme
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

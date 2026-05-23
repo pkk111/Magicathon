@@ -2,18 +2,15 @@ import type { VercelRequest, VercelResponse } from '@vercel/node'
 import OpenAI from 'openai'
 import sharp from 'sharp'
 
-const SYSTEM_PROMPT = `Look at this image. Suggest 8 funny meme directions. Each suggestion has 3 parts:
+const SYSTEM_PROMPT = `Analyze this image. Identify the main subject and setting.
 
-1. "summary" — 1-5 word label shown to user as a button (e.g. "Corporate Hustle", "Main Character Energy")
-2. "prompt" — visual image generation prompt describing how to transform the photo visually. NO TEXT instructions here. Only visual style, scene changes, exaggeration, absurd situations.
-3. "textPrompt" — a separate prompt for a text generator to write funny meme captions for the generated image. Describe the tone, humor style, and what kind of caption would be funny.
+Suggest 8 meme directions. Each has 3 SHORT fields:
+- "summary": 2-5 word label
+- "prompt": image generation prompt (max 50 words). Describe subject + scene + style. Include "with empty white caption bars at top and bottom". NO text/words in image.
+- "textPrompt": what kind of caption to write (max 20 words). Tone and humor style only.
 
-RULES:
-- "prompt" must NEVER mention adding text, words, captions, or labels to the image
-- "textPrompt" is for generating overlay text SEPARATELY — it tells another AI what kind of caption to write
-
-Return JSON only, no emojis in any field:
-{"suggestions":[{"summary":"1-5 words","prompt":"visual-only image generation prompt","textPrompt":"prompt for text caption generator"}]}`
+Keep prompts concise. JSON only, no markdown, no emojis:
+{"suggestions":[{"summary":"...","prompt":"...","textPrompt":"..."}]}`
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
@@ -54,8 +51,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           ],
         },
       ],
-      temperature: 1.0,
-      max_tokens: 800,
+      temperature: 0.5,
+      max_tokens: 2000,
     })
 
     const t2 = Date.now()
@@ -70,35 +67,36 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     console.log(`[analyze] Raw response: ${raw.substring(0, 200)}...`)
 
     const jsonStr = raw.replace(/^```json?\n?/g, '').replace(/\n?```$/g, '').trim()
-    let suggestions: any[]
+    let suggestions: any[] = []
     try {
       const parsed = JSON.parse(jsonStr)
-      // Handle both {"suggestions": [...]} and bare [...]
-      suggestions = Array.isArray(parsed) ? parsed : parsed.suggestions
+      suggestions = Array.isArray(parsed) ? parsed : parsed.suggestions || []
     } catch {
-      // Try to extract JSON array or object from the response
-      const arrayMatch = jsonStr.match(/\[[\s\S]*\]/)
-      const objMatch = jsonStr.match(/\{[\s\S]*\}/)
-      if (arrayMatch) {
-        suggestions = JSON.parse(arrayMatch[0])
-      } else if (objMatch) {
-        const parsed = JSON.parse(objMatch[0])
-        suggestions = parsed.suggestions || []
-      } else {
-        console.error('[analyze] Could not parse:', jsonStr)
-        return res.status(500).json({ error: 'Invalid response structure' })
+      try {
+        const arrayMatch = jsonStr.match(/\[[\s\S]*\]/)
+        if (arrayMatch) {
+          suggestions = JSON.parse(arrayMatch[0])
+        } else {
+          const objMatch = jsonStr.match(/\{[\s\S]*\}/)
+          if (objMatch) {
+            const parsed = JSON.parse(objMatch[0])
+            suggestions = parsed.suggestions || []
+          }
+        }
+      } catch (parseErr) {
+        console.error('[analyze] JSON parse failed:', parseErr, '\nRaw:', raw.substring(0, 500))
       }
     }
 
     if (!Array.isArray(suggestions) || suggestions.length === 0) {
-      return res.status(500).json({ error: 'Invalid response structure' })
+      console.error('[analyze] No valid suggestions extracted')
+      return res.status(500).json({ error: 'Something went wrong. Please try again.' })
     }
 
     return res.status(200).json({ suggestions })
   } catch (e) {
     console.error('Analyze error:', e)
-    const message = e instanceof Error ? e.message : 'Analysis failed'
-    return res.status(500).json({ error: message })
+    return res.status(500).json({ error: 'Something went wrong. Please try again.' })
   }
 }
 
