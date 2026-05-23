@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import { getDb, parseReactions } from './lib/db'
+import { getDb, parseReactions } from './lib/db.js'
 
 const VALID_REACTIONS = ['laugh', 'fire', 'cry-laugh', '100', 'skull', 'heart']
 

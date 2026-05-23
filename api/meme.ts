@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { nanoid } from 'nanoid'
-import { getDb } from './lib/db'
+import { getDb } from './lib/db.js'
 
 const DEFAULT_REACTIONS = { laugh: 0, fire: 0, 'cry-laugh': 0, '100': 0, skull: 0, heart: 0 }
 
