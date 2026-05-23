@@ -66,8 +66,10 @@ export default function FeedPage() {
   }
 
   return (
-    <div className="min-h-dvh pt-14 pb-8 px-4">
-      <div className="max-w-4xl mx-auto">
+    <div className="relative min-h-dvh pt-14 pb-8 px-4 overflow-hidden">
+      <img src="/feed-bg.png" alt="" className="absolute inset-0 w-full h-full object-cover" />
+      <div className="absolute inset-0 bg-ink/70" />
+      <div className="relative z-10 max-w-4xl mx-auto">
         <h1 className="text-2xl font-bold mb-6 pt-4">Meme Feed</h1>
 
         <div className="grid gap-6 max-w-lg md:max-w-2xl lg:max-w-3xl mx-auto">
@@ -97,7 +99,7 @@ export default function FeedPage() {
 
 function FeedCard({ meme, onReactionsUpdate }: { meme: FeedMeme; onReactionsUpdate: (r: Record<string, number>) => void }) {
   return (
-    <div className="bg-paper/5 rounded-lg overflow-hidden border border-paper/10">
+    <div className="bg-ink-card rounded-xl overflow-hidden border border-white/5 hover:border-white/10 transition-colors">
       <a href={`/m/${meme.memeId}`}>
         <img
           src={getDisplayUrl(meme.exportedPngUrl)}
@@ -105,8 +107,8 @@ function FeedCard({ meme, onReactionsUpdate }: { meme: FeedMeme; onReactionsUpda
           className="w-full aspect-video object-cover"
         />
       </a>
-      <div className="p-3">
-        <p className="text-paper/30 text-xs mb-2">
+      <div className="p-4">
+        <p className="text-paper/30 text-xs mb-3">
           {new Date(meme.createdAt).toLocaleString()}
         </p>
         <div className="flex items-center gap-2">
@@ -119,10 +121,10 @@ function FeedCard({ meme, onReactionsUpdate }: { meme: FeedMeme; onReactionsUpda
           </div>
           <button
             onClick={() => shareMemeUrl(meme.memeId)}
-            className="px-3 py-2 rounded-full border border-paper/20 text-paper/70 hover:border-acid hover:text-acid transition-colors text-lg"
+            className="p-2 rounded-full border border-white/10 hover:border-acid transition-colors"
             title="Share"
           >
-            📤
+            <img src="/send.png" alt="Share" className="w-6 h-6 invert brightness-200" />
           </button>
         </div>
       </div>

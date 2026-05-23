@@ -48,6 +48,18 @@ app.post('/api/upload', upload.single('image'), async (req, res) => {
   }
 })
 
+// Analyze (Grok vision)
+app.post('/api/analyze', async (req, res) => {
+  const handler = await loadHandler('./api/analyze.ts')
+  handler(req, res)
+})
+
+// Generate (Gemini image generation)
+app.post('/api/generate', async (req, res) => {
+  const handler = await loadHandler('./api/generate.ts')
+  handler(req, res)
+})
+
 // Suggest
 app.post('/api/suggest', async (req, res) => {
   const handler = await loadHandler('./api/suggest.ts')

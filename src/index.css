@@ -1,9 +1,13 @@
 @import "tailwindcss";
 
 @theme {
-  --color-ink: #0c0c0a;
+  --color-ink: #0d0b1a;
+  --color-ink-light: #1a1730;
+  --color-ink-card: #14122a;
   --color-paper: #f4f1e8;
   --color-acid: #c6f24e;
+  --color-purple: #a855f7;
+  --color-purple-dark: #7c3aed;
 }
 
 @font-face {
@@ -15,4 +19,5 @@
 body {
   font-family: 'Montserrat', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
+  background: var(--color-ink);
 }

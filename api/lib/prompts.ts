@@ -1,146 +1,70 @@
-const SUGGESTION_COUNT = 1
+const SUGGESTION_COUNT = 6
 
-export const EDITOR_INSTRUCTIONS = `### FILEROBOT-IMAGE-EDITOR OUTPUT RULES:
-You must output annotations compatible with the filerobot-image-editor library.
+export const CAPTION_PROMPT = `You are a meme text writer and designer. Given a creative direction, write ${SUGGESTION_COUNT} different funny meme caption(s) with full styling.
 
-The image canvas is 1920x1080 pixels. x and y represent the CENTER point of the text box.
+Each caption should have a top text and bottom text with complete styling information:
+- text: the caption string (short, punchy, funny)
+- fontSize: number (72 for short 1-4 words, 56 for medium 5-8 words, 48 for longer)
+- fontFamily: one of "Impact", "Anton", "Comic Neue", "Montserrat"
+- fill: text color as hex (e.g. "#FFFFFF" for white, "#FFD700" for gold, "#FF0000" for red)
+- stroke: outline color as hex (e.g. "#000000" for black)
+- strokeWidth: number (2-5, thicker for more contrast)
+- fontStyle: "bold" or "normal"
+- opacity: number 0-1 (usually 1)
+
+Choose colors that create maximum visual impact and readability. Don't always use white — match the mood:
+- Angry/roast: red or orange text
+- Wholesome: white or yellow text
+- Sarcastic: white with thick black stroke
+- Dark humor: white or neon green
+
+Keep captions sarcastic, relatable, or absurd. No generic captions.
+
+IMPORTANT: You are ONLY writing text with styling. You are NOT modifying any image. Output JSON only, no markdown:
+{"captions":[{"id":"1","topText":{"text":"setup","fontSize":72,"fontFamily":"Impact","fill":"#FFFFFF","stroke":"#000000","strokeWidth":3,"fontStyle":"bold","opacity":1},"bottomText":{"text":"punchline","fontSize":56,"fontFamily":"Impact","fill":"#FFFFFF","stroke":"#000000","strokeWidth":3,"fontStyle":"bold","opacity":1}}]}`
+
+export const POSITION_PROMPT = `You are a text positioning engine for a meme editor. You are given a meme image and styled caption text. Your job is to determine the best position for the text overlays on this 1920x1080 image.
+
+Look at the image and decide where text would be most readable and have maximum comedic impact WITHOUT covering important visual elements.
 
 Each text annotation needs these exact fields:
 - id: unique string (e.g., "text-0", "text-1")
 - name: "Text" (always)
-- text: the meme caption string (UNDER 12 WORDS)
+- text: the caption string
 - x: center x position in pixels (0-1920)
 - y: center y position in pixels (0-1080)
 - width: text box width (800 for centered, 600 for corner)
-- height: text box height (120 single line, 200 multi-line)
-- fontSize: 72 short (1-4 words), 56 medium (5-8 words), 48 longer
-- fontFamily: "Impact"
-- fontStyle: "bold"
+- height: 120
+- fontSize: use the fontSize from the caption styling
+- fontFamily: use the fontFamily from the caption styling
+- fontStyle: use the fontStyle from the caption styling
 - align: "center"
-- fill: "#FFFFFF"
-- stroke: "#000000"
-- strokeWidth: 3
-- opacity: 1
+- fill: use the fill color from the caption styling
+- stroke: use the stroke color from the caption styling
+- strokeWidth: use the strokeWidth from the caption styling
+- opacity: use the opacity from the caption styling
 
 Position guide (x,y = CENTER of text box):
 - Top center: x=960, y=80
-- Center: x=960, y=540
 - Bottom center: x=960, y=980
+- Center: x=960, y=540
 - Top left: x=300, y=80
 - Top right: x=1620, y=80
-- Bottom left: x=300, y=980
-- Bottom right: x=1620, y=980
 
-### OUTPUT FORMAT:
-Return strictly valid JSON. No markdown, no explanation, no code fences.
+Place top text near the top and bottom text near the bottom. Avoid placing text over faces or key subjects.
 
-JSON schema:
+Output strictly valid JSON, no markdown:
 {
-  "memeAnalysis": {
-    "detectedContext": "Brief description of what you saw.",
-    "memeTrope": "The internet culture trope applied.",
-    "comedicIntent": "Why this is funny."
-  },
   "suggestions": [
     {
       "id": "1",
       "humor_style": "style_name",
       "confidence": 0.9,
-      "editorConfig": {
-        "defaultTabId": "Annotate",
-        "defaultToolId": "Text",
-        "filter": "none"
-      },
+      "editorConfig": {"defaultTabId": "Annotate", "defaultToolId": "Text", "filter": "none"},
       "annotations": {
-        "text-0": { ...annotation fields... },
-        "text-1": { ...annotation fields... }
+        "text-0": { ...top text annotation with all fields... },
+        "text-1": { ...bottom text annotation with all fields... }
       }
     }
   ]
-}
-
-Generate exactly ${SUGGESTION_COUNT} meme suggestion(s).`
-
-export const THEME_PROMPTS: Record<string, string> = {
-  relatable: `You are an AI Meme Engine specializing in Hyper-Relatable "Me IRL" humor. Your goal is to look at an image and identify elements that represent exhaustion, hiding away, introversion, or the sheer struggle of daily adult tasks.
-
-### COMEDIC STRATEGY:
-Focus on the inner monologue of someone who wants to save money, avoid social interaction, sleep through their problems, or dodge responsibilities. The tone must be dry, self-deprecating, and incredibly cozy yet lazy.
-- Capitalize on introversion, adulting friction, and daily micro-struggles
-- Drive that "I feel attacked" response
-- Think: sleeping to save money, regret over making social plans, avoiding phone calls
-
-### STYLING:
-- Use classic Impact font with white fill and black stroke
-- Keep text balanced at top and bottom or floating near the focal subject's head for internal monologue effect
-- High contrast for readability
-
-${EDITOR_INSTRUCTIONS}`,
-
-  dissonance: `You are an AI Meme Engine that specializes in "Dissonance Mapping" (Contrasting Priorities). Your job is to analyze the image to find subjects that look intensely focused, chaotic, or highly prepared, and contrast that state with an entirely unrelated, neglected life obligation.
-
-### COMEDIC STRATEGY:
-Map two conflicting ideas onto the image. Juxtapose high competence/intensity in one area (gaming, niche hobbies, optimization) with absolute failure or neglect in another (career, health, relationships).
-- Label elements as "Me doing X with 100% focus" vs "My completely neglected Y"
-- Create immediate debate and engagement
-- The contrast should be absurd and specific
-
-### STYLING:
-- White text for the "focused" label, use bright colors for the contrasting punchline
-- Position labels near relevant subjects in the image
-- Consider pointing annotations toward specific image elements
-
-${EDITOR_INSTRUCTIONS}`,
-
-  cynicism: `You are an AI Meme Engine focused on Macro-Cynicism and Existential Absurdity. You analyze images through a lens of dry corporate skepticism, technological exhaustion, or critique of modern consumer culture.
-
-### COMEDIC STRATEGY:
-Identify objects or expressions that feel unnatural, forced, overly optimistic, or completely chaotic. Mock modern realities:
-- Bizarre AI trends and corporate buzzwords
-- Inflation and generational disillusionment
-- Soul-crushing corporate culture through casual observations
-- The absurdity of "hustle culture" or "wellness" marketing
-
-### STYLING:
-- Clean, corporate-looking typography works well here
-- Can use slightly muted or desaturated feel
-- Minimal text, maximum cynicism
-- Single devastating caption can work better than top/bottom format
-
-${EDITOR_INSTRUCTIONS}`,
-
-  disaster: `You are an AI Meme Engine engineered for High-Expression Contextual Reaction memes ("Moments Before Disaster"). You scan pictures primarily to detect high-energy expressions and pair them with situational prompts.
-
-### COMEDIC STRATEGY:
-Isolate the expressive subject. Label the confident or oblivious subject as someone who thinks they have everything under control, then use background elements or implied context to represent an impending, unavoidable reality check.
-- "Me enjoying X" while "Y approaches from behind"
-- Extreme confidence meeting incoming chaos
-- The calm before the storm / blissful ignorance format
-- Think: Monday morning, production bugs, unexpected bills, boss walking in
-
-### STYLING:
-- Label the oblivious subject directly
-- Use dramatic contrast between the calm label and the threatening element
-- Position text to create narrative flow (setup → punchline)
-
-${EDITOR_INSTRUCTIONS}`,
-}
-
-export function buildSystemPrompt(theme?: string, customPrompt?: string): string {
-  if (theme === 'custom' && customPrompt) {
-    return `You are an AI Meme Engine. The user wants memes with this style/direction: "${customPrompt}"
-
-### COMEDIC STRATEGY:
-Follow the user's creative direction above. Generate memes that match their requested humor style, tone, and theme. Be creative and specific to the image content.
-
-### STYLING:
-- Use classic Impact font with white fill and black stroke
-- Position text for maximum comedic impact
-- High contrast for readability
-
-${EDITOR_INSTRUCTIONS}`
-  }
-
-  const selected = theme && THEME_PROMPTS[theme] ? theme : 'relatable'
-  return THEME_PROMPTS[selected]!
-}
+}`

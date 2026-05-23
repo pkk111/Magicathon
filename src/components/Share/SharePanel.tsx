@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { postMemeToFeed } from '../../lib/meme-export'
 
 interface Props {
@@ -9,6 +10,7 @@ interface Props {
 }
 
 export default function SharePanel({ blob, previewUrl, imageUrl, onBack }: Props) {
+  const navigate = useNavigate()
   const [toast, setToast] = useState<string | null>(null)
   const [posting, setPosting] = useState(false)
   const [shareUrl, setShareUrl] = useState<string | null>(null)
@@ -46,6 +48,7 @@ export default function SharePanel({ blob, previewUrl, imageUrl, onBack }: Props
       setMemeId(result.memeId)
       setShareUrl(result.shareUrl)
       showToast('Posted to feed!')
+      navigate('/feed')
     } catch (e) {
       showToast(e instanceof Error ? e.message : 'Failed to post')
     } finally {

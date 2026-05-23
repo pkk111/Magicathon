@@ -6,7 +6,7 @@ import ViewPage from './pages/ViewPage'
 
 export default function App() {
   return (
-    <div className="min-h-dvh bg-ink text-paper">
+    <div className="min-h-dvh bg-ink text-paper selection:bg-acid/30">
       <NavBar />
       <Routes>
         <Route path="/" element={<CreatePage />} />
