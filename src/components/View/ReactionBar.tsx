@@ -1,26 +1,11 @@
 import { useState, useEffect, useRef } from 'react'
 import { getSessionId } from '../../lib/session'
+import { REACTION_EMOJIS, parseReactions } from '../../lib/reactions'
 
 interface Props {
   memeId: string
   reactions: Record<string, number>
   onReactionsUpdate: (reactions: Record<string, number>) => void
-}
-
-const REACTION_EMOJIS: Record<string, string> = {
-  laugh: '😂',
-  fire: '🔥',
-  'cry-laugh': '😭',
-  '100': '💯',
-  skull: '💀',
-  heart: '❤️',
-}
-
-function parseReactions(reactions: Record<string, number> | string): Record<string, number> {
-  if (typeof reactions === 'string') {
-    try { return JSON.parse(reactions) } catch { return {} }
-  }
-  return reactions || {}
 }
 
 export default function ReactionBar({ memeId, reactions, onReactionsUpdate }: Props) {
@@ -48,8 +33,7 @@ export default function ReactionBar({ memeId, reactions, onReactionsUpdate }: Pr
   }, [memeId])
 
   const handleReact = async (reaction: string) => {
-    if (submitting) return
-    if (selected === reaction) return
+    if (submitting || selected === reaction) return
 
     const previousSelection = selected
     setSelected(reaction)

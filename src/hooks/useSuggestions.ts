@@ -27,8 +27,6 @@ export function useSuggestions() {
       }
 
       const result: SuggestionsResult = await res.json()
-      console.log('=== AI Suggest Response ===')
-      console.log(JSON.stringify(result, null, 2))
       setData(result)
       return result
     } catch (e) {

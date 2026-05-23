@@ -90,12 +90,6 @@ app.get('/api/feed', async (req, res) => {
   handler(req, res)
 })
 
-// Reaction status
-app.get('/api/reaction-status', async (req, res) => {
-  const handler = await loadHandler('./api/reaction-status.ts')
-  handler(req, res)
-})
-
 // DB Setup
 app.post('/api/setup-db', async (req, res) => {
   const handler = await loadHandler('./api/setup-db.ts')

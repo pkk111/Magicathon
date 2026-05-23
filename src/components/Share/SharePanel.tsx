@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { getSessionId } from '../../lib/session'
+import { postMemeToFeed } from '../../lib/meme-export'
 
 interface Props {
   blob: Blob
@@ -42,29 +42,9 @@ export default function SharePanel({ blob, previewUrl, imageUrl, onBack }: Props
   const handlePostToFeed = async () => {
     setPosting(true)
     try {
-      // Upload the exported PNG to memes/ folder
-      const formData = new FormData()
-      formData.append('image', blob, 'meme.png')
-      const uploadRes = await fetch('/api/upload', {
-        method: 'POST',
-        headers: { 'x-upload-type': 'meme' },
-        body: formData,
-      })
-      if (!uploadRes.ok) throw new Error('Upload failed')
-      const { imageUrl: exportedPngUrl } = await uploadRes.json()
-
-      // Save meme record with sessionId
-      const sessionId = getSessionId()
-      const memeRes = await fetch('/api/meme', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ imageUrl, exportedPngUrl, textFields: [], sessionId }),
-      })
-      if (!memeRes.ok) throw new Error('Save failed')
-      const { memeId: id, shareUrl: url } = await memeRes.json()
-
-      setMemeId(id)
-      setShareUrl(url)
+      const result = await postMemeToFeed(blob, imageUrl)
+      setMemeId(result.memeId)
+      setShareUrl(result.shareUrl)
       showToast('Posted to feed!')
     } catch (e) {
       showToast(e instanceof Error ? e.message : 'Failed to post')
@@ -110,7 +90,7 @@ export default function SharePanel({ blob, previewUrl, imageUrl, onBack }: Props
               disabled={posting}
               className="w-full py-3 bg-acid text-ink font-bold rounded text-sm uppercase tracking-wide disabled:opacity-50"
             >
-              {posting ? '⏳ Posting...' : '🚀 Post to Feed'}
+              {posting ? 'Posting...' : 'Post to Feed'}
             </button>
           ) : (
             <div className="p-3 bg-acid/10 border border-acid/30 rounded">
@@ -123,14 +103,14 @@ export default function SharePanel({ blob, previewUrl, imageUrl, onBack }: Props
             onClick={handleDownload}
             className="w-full py-3 border border-paper/30 text-paper font-bold rounded text-sm uppercase tracking-wide hover:border-acid hover:text-acid transition-colors"
           >
-            ⬇️ Download PNG
+            Download PNG
           </button>
 
           <button
             onClick={handleCopyImage}
             className="w-full py-3 border border-paper/30 text-paper font-bold rounded text-sm uppercase tracking-wide hover:border-acid hover:text-acid transition-colors"
           >
-            📋 Copy Image to Clipboard
+            Copy Image to Clipboard
           </button>
 
           {shareUrl && (
@@ -139,7 +119,7 @@ export default function SharePanel({ blob, previewUrl, imageUrl, onBack }: Props
                 onClick={handleCopyLink}
                 className="w-full py-3 border border-acid text-acid font-bold rounded text-sm uppercase tracking-wide hover:bg-acid hover:text-ink transition-colors"
               >
-                🔗 Copy Link
+                Copy Link
               </button>
 
               {!!navigator.share && (
@@ -147,14 +127,11 @@ export default function SharePanel({ blob, previewUrl, imageUrl, onBack }: Props
                   onClick={handleNativeShare}
                   className="w-full py-3 border border-paper/30 text-paper font-bold rounded text-sm uppercase tracking-wide hover:border-acid hover:text-acid transition-colors"
                 >
-                  📤 Share
+                  Share
                 </button>
               )}
 
-              <div
-                onClick={handleCopyLink}
-                className="mt-1 p-3 bg-paper/5 rounded border border-paper/10 cursor-pointer"
-              >
+              <div onClick={handleCopyLink} className="mt-1 p-3 bg-paper/5 rounded border border-paper/10 cursor-pointer">
                 <p className="text-xs text-paper/50 mb-1">Tap to copy link:</p>
                 <p className="text-sm text-acid font-mono break-all">{shareUrl}</p>
               </div>

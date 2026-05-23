@@ -2,11 +2,51 @@ import { useState, useEffect, useRef } from 'react'
 import FilerobotImageEditor, { TABS, TOOLS } from 'react-filerobot-image-editor'
 import type { MemeSuggestion } from '../../../shared/types'
 import SharePanel from '../Share/SharePanel'
+import { scaleAnnotationsToEditor } from '../../lib/annotations'
 
 interface Props {
   imageUrl: string
   suggestion: MemeSuggestion
   onClose: () => void
+}
+
+const EDITOR_THEME = {
+  palette: {
+    'bg-secondary': '#0c0c0a',
+    'bg-primary': '#161613',
+    'bg-primary-active': '#2a2a24',
+    'accent-primary': '#c6f24e',
+    'accent-primary-active': '#9fd400',
+    'icons-primary': '#f4f1e8',
+    'icons-secondary': '#a0a090',
+    'borders-primary': '#333330',
+    'borders-secondary': '#222220',
+  },
+  typography: { fontFamily: 'Montserrat, sans-serif' },
+}
+
+const TEXT_CONFIG = {
+  text: 'Add text',
+  fonts: [
+    { label: 'Impact', value: 'Impact' },
+    { label: 'Anton', value: 'Anton' },
+    { label: 'Comic Neue', value: 'Comic Neue' },
+    { label: 'Montserrat', value: 'Montserrat' },
+  ],
+  fontSize: 56,
+  align: 'center' as const,
+  fontStyle: 'bold' as const,
+}
+
+const ANNOTATIONS_COMMON = {
+  fill: '#FFFFFF',
+  stroke: '#000000',
+  strokeWidth: 3,
+  shadowOffsetX: 2,
+  shadowOffsetY: 2,
+  shadowBlur: 4,
+  shadowColor: '#000000',
+  opacity: 1,
 }
 
 export default function MemeEditor({ imageUrl, suggestion, onClose }: Props) {
@@ -19,103 +59,50 @@ export default function MemeEditor({ imageUrl, suggestion, onClose }: Props) {
   const getCurrentImgDataRef = useRef<(() => any) | null>(null)
 
   useEffect(() => {
+    let cancelled = false
     async function loadImage() {
       try {
         const res = await fetch(imageUrl)
         const blob = await res.blob()
         const reader = new FileReader()
         reader.onload = () => {
-          setImageDataUrl(reader.result as string)
-          setLoading(false)
+          if (!cancelled) {
+            setImageDataUrl(reader.result as string)
+            setLoading(false)
+          }
         }
         reader.readAsDataURL(blob)
       } catch {
-        setLoading(false)
+        if (!cancelled) setLoading(false)
       }
     }
     loadImage()
+    return () => { cancelled = true }
   }, [imageUrl])
 
-  // Inject annotations AFTER editor has loaded the image and set dimensions
   useEffect(() => {
     if (loading) return
     const timer = setTimeout(() => {
-      if (updateStateRef.current && getCurrentImgDataRef.current) {
-        // Get actual displayed dimensions from the editor
+      if (!updateStateRef.current) return
+
+      let displayWidth = 800
+      let displayHeight = 450
+
+      if (getCurrentImgDataRef.current) {
         const imgData = getCurrentImgDataRef.current()
-        const designState = imgData?.designState
-        const shown = designState?.shownImageDimensions
-        console.log('=== Editor shownImageDimensions ===', shown)
-
-        // Scale factor: AI uses 1920x1080, editor uses displayed size
-        const scaleX = (shown?.width || 800) / 1920
-        const scaleY = (shown?.height || 450) / 1080
-
-        const annotations = Object.fromEntries(
-          Object.entries(suggestion.annotations || {}).map(([key, ann]) => {
-            // Scale from 1920x1080 to displayed size, then convert center x to left edge
-            const scaledWidth = (ann.width || 800) * scaleX
-            const scaledX = ann.x * scaleX - scaledWidth / 2
-            const scaledY = ann.y * scaleY
-            const scaledFontSize = ann.fontSize * scaleY
-
-            return [
-              key,
-              {
-                ...ann,
-                x: scaledX,
-                y: scaledY,
-                width: scaledWidth,
-                height: (ann.height || 120) * scaleY,
-                fontSize: scaledFontSize,
-                strokeWidth: (ann.strokeWidth || 3) * scaleX,
-                name: 'Text',
-                scaleX: 1,
-                scaleY: 1,
-                rotation: 0,
-                visible: true,
-                padding: 1,
-                verticalAlign: 'top',
-                lineHeight: 1,
-                letterSpacing: 0,
-                fontWeight: 'bold',
-              },
-            ]
-          })
-        )
-        const annotationIds = Object.keys(annotations)
-        console.log('=== Scaled annotations ===', annotations)
-        updateStateRef.current({
-          annotations,
-          annotationIds,
-        })
-      } else if (updateStateRef.current) {
-        // Fallback: if getCurrentImgDataRef not available, use rough estimate
-        console.log('=== Fallback: no getCurrentImgDataRef, using estimate ===')
-        const annotations = Object.fromEntries(
-          Object.entries(suggestion.annotations || {}).map(([key, ann]) => [
-            key,
-            {
-              ...ann,
-              x: ann.x - (ann.width || 800) / 2,
-              name: 'Text',
-              scaleX: 1,
-              scaleY: 1,
-              rotation: 0,
-              visible: true,
-              padding: 1,
-              verticalAlign: 'top',
-              lineHeight: 1,
-              letterSpacing: 0,
-              fontWeight: 'bold',
-            },
-          ])
-        )
-        updateStateRef.current({
-          annotations,
-          annotationIds: Object.keys(annotations),
-        })
+        const shown = imgData?.designState?.shownImageDimensions
+        if (shown) {
+          displayWidth = shown.width
+          displayHeight = shown.height
+        }
       }
+
+      const scaled = scaleAnnotationsToEditor(
+        suggestion.annotations || {},
+        displayWidth,
+        displayHeight,
+      )
+      updateStateRef.current(scaled)
       setTextReady(true)
     }, 1500)
     return () => clearTimeout(timer)
@@ -170,42 +157,9 @@ export default function MemeEditor({ imageUrl, suggestion, onClose }: Props) {
         useBackendTranslations={false}
         updateStateFnRef={updateStateRef as any}
         getCurrentImgDataFnRef={getCurrentImgDataRef as any}
-        theme={{
-          palette: {
-            'bg-secondary': '#0c0c0a',
-            'bg-primary': '#161613',
-            'bg-primary-active': '#2a2a24',
-            'accent-primary': '#c6f24e',
-            'accent-primary-active': '#9fd400',
-            'icons-primary': '#f4f1e8',
-            'icons-secondary': '#a0a090',
-            'borders-primary': '#333330',
-            'borders-secondary': '#222220',
-          },
-          typography: { fontFamily: 'Montserrat, sans-serif' },
-        }}
-        Text={{
-          text: 'Add text',
-          fonts: [
-            { label: 'Impact', value: 'Impact' },
-            { label: 'Anton', value: 'Anton' },
-            { label: 'Comic Neue', value: 'Comic Neue' },
-            { label: 'Montserrat', value: 'Montserrat' },
-          ],
-          fontSize: 56,
-          align: 'center',
-          fontStyle: 'bold',
-        }}
-        annotationsCommon={{
-          fill: '#FFFFFF',
-          stroke: '#000000',
-          strokeWidth: 3,
-          shadowOffsetX: 2,
-          shadowOffsetY: 2,
-          shadowBlur: 4,
-          shadowColor: '#000000',
-          opacity: 1,
-        }}
+        theme={EDITOR_THEME}
+        Text={TEXT_CONFIG}
+        annotationsCommon={ANNOTATIONS_COMMON}
         onSave={handleSave}
         onClose={onClose}
       />

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import ReactionBar from '../components/View/ReactionBar'
 import { getDisplayUrl } from '../lib/api'
+import { shareMemeUrl } from '../lib/share'
 
 interface FeedMeme {
   memeId: string
@@ -22,11 +23,7 @@ export default function FeedPage() {
       const res = await fetch(`/api/feed?page=${pageNum}&limit=20`)
       if (!res.ok) throw new Error('Failed to load')
       const data = await res.json()
-      if (pageNum === 1) {
-        setMemes(data.memes)
-      } else {
-        setMemes(prev => [...prev, ...data.memes])
-      }
+      setMemes(prev => pageNum === 1 ? data.memes : [...prev, ...data.memes])
       setHasMore(data.hasMore)
     } catch (e) {
       console.error('Feed fetch error:', e)
@@ -35,14 +32,16 @@ export default function FeedPage() {
     }
   }
 
-  useEffect(() => {
-    fetchFeed(1)
-  }, [])
+  useEffect(() => { fetchFeed(1) }, [])
 
   const loadMore = () => {
     const nextPage = page + 1
     setPage(nextPage)
     fetchFeed(nextPage)
+  }
+
+  const updateReactions = (memeId: string, updated: Record<string, number>) => {
+    setMemes(prev => prev.map(m => m.memeId === memeId ? { ...m, reactions: updated } : m))
   }
 
   if (loading) {
@@ -73,51 +72,11 @@ export default function FeedPage() {
 
         <div className="grid gap-6 max-w-lg md:max-w-2xl lg:max-w-3xl mx-auto">
           {memes.map((meme) => (
-            <div key={meme.memeId} className="bg-paper/5 rounded-lg overflow-hidden border border-paper/10">
-              <a href={`/m/${meme.memeId}`}>
-                <img
-                  src={getDisplayUrl(meme.exportedPngUrl)}
-                  alt="Meme"
-                  className="w-full aspect-video object-cover"
-                />
-              </a>
-              <div className="p-3">
-                <p className="text-paper/30 text-xs mb-2">
-                  {new Date(meme.createdAt).toLocaleString()}
-                </p>
-                <div className="flex items-center gap-2">
-                  <div className="flex-1">
-                    <ReactionBar
-                      memeId={meme.memeId}
-                      reactions={meme.reactions}
-                      onReactionsUpdate={(updated) => {
-                        setMemes(prev => prev.map(m =>
-                          m.memeId === meme.memeId ? { ...m, reactions: updated } : m
-                        ))
-                      }}
-                    />
-                  </div>
-                  <button
-                    onClick={async () => {
-                      const url = `${window.location.origin}/m/${meme.memeId}`
-                      if (navigator.share) {
-                        try {
-                          await navigator.share({ title: 'Check out this meme!', url })
-                        } catch { /* cancelled */ }
-                      } else {
-                        try {
-                          await navigator.clipboard.writeText(url)
-                        } catch { /* fallback */ }
-                      }
-                    }}
-                    className="px-3 py-2 rounded-full border border-paper/20 text-paper/70 hover:border-acid hover:text-acid transition-colors text-lg"
-                    title="Share"
-                  >
-                    📤
-                  </button>
-                </div>
-              </div>
-            </div>
+            <FeedCard
+              key={meme.memeId}
+              meme={meme}
+              onReactionsUpdate={(updated) => updateReactions(meme.memeId, updated)}
+            />
           ))}
         </div>
 
@@ -131,6 +90,41 @@ export default function FeedPage() {
             </button>
           </div>
         )}
+      </div>
+    </div>
+  )
+}
+
+function FeedCard({ meme, onReactionsUpdate }: { meme: FeedMeme; onReactionsUpdate: (r: Record<string, number>) => void }) {
+  return (
+    <div className="bg-paper/5 rounded-lg overflow-hidden border border-paper/10">
+      <a href={`/m/${meme.memeId}`}>
+        <img
+          src={getDisplayUrl(meme.exportedPngUrl)}
+          alt="Meme"
+          className="w-full aspect-video object-cover"
+        />
+      </a>
+      <div className="p-3">
+        <p className="text-paper/30 text-xs mb-2">
+          {new Date(meme.createdAt).toLocaleString()}
+        </p>
+        <div className="flex items-center gap-2">
+          <div className="flex-1">
+            <ReactionBar
+              memeId={meme.memeId}
+              reactions={meme.reactions}
+              onReactionsUpdate={onReactionsUpdate}
+            />
+          </div>
+          <button
+            onClick={() => shareMemeUrl(meme.memeId)}
+            className="px-3 py-2 rounded-full border border-paper/20 text-paper/70 hover:border-acid hover:text-acid transition-colors text-lg"
+            title="Share"
+          >
+            📤
+          </button>
+        </div>
       </div>
     </div>
   )

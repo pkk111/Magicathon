@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import postgres from 'postgres'
+import { getDb, parseReactions } from '../lib/db'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET') {
@@ -11,7 +11,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: 'Missing meme id', code: 'MISSING_ID' })
   }
 
-  const sql = postgres(process.env.POSTGRES_URL!)
+  const sql = getDb()
 
   try {
     const rows = await sql`
@@ -29,7 +29,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       imageUrl: meme.image_url,
       exportedPngUrl: meme.exported_png_url,
       textFields: meme.text_fields,
-      reactions: typeof meme.reactions === 'string' ? JSON.parse(meme.reactions) : meme.reactions,
+      reactions: parseReactions(meme.reactions),
       totalReactions: meme.total_reactions,
       createdAt: meme.created_at,
     })

@@ -1,14 +1,15 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import postgres from 'postgres'
 import { nanoid } from 'nanoid'
+import { getDb } from './lib/db'
+
+const DEFAULT_REACTIONS = { laugh: 0, fire: 0, 'cry-laugh': 0, '100': 0, skull: 0, heart: 0 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed', code: 'METHOD_NOT_ALLOWED' })
   }
 
-  const sql = postgres(process.env.POSTGRES_URL!)
-
+  const sql = getDb()
   const { imageUrl, exportedPngUrl, textFields, sessionId } = req.body || {}
 
   if (!imageUrl || !exportedPngUrl) {
@@ -17,7 +18,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     const memeId = nanoid(10)
-    const reactions = { laugh: 0, fire: 0, 'cry-laugh': 0, '100': 0, skull: 0, heart: 0 }
 
     await sql`
       INSERT INTO memes (id, image_url, exported_png_url, text_fields, reactions, total_reactions, session_id)
@@ -26,7 +26,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         ${imageUrl},
         ${exportedPngUrl},
         ${sql.json(textFields || [])},
-        ${sql.json(reactions)},
+        ${sql.json(DEFAULT_REACTIONS)},
         0,
         ${sessionId || null}
       )

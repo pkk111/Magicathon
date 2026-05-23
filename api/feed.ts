@@ -1,13 +1,12 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import postgres from 'postgres'
+import { getDb, parseReactions } from './lib/db'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed', code: 'METHOD_NOT_ALLOWED' })
   }
 
-  const sql = postgres(process.env.POSTGRES_URL!)
-
+  const sql = getDb()
   const page = parseInt(req.query.page as string) || 1
   const limit = Math.min(parseInt(req.query.limit as string) || 20, 50)
   const offset = (page - 1) * limit
@@ -25,7 +24,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const memes = rows.slice(0, limit).map(row => ({
       memeId: row.id,
       exportedPngUrl: row.exported_png_url,
-      reactions: typeof row.reactions === 'string' ? JSON.parse(row.reactions) : row.reactions,
+      reactions: parseReactions(row.reactions),
       totalReactions: row.total_reactions,
       createdAt: row.created_at,
       sessionId: row.session_id,

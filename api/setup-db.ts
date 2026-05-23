@@ -1,12 +1,12 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import postgres from 'postgres'
+import { getDb } from './lib/db'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const sql = postgres(process.env.POSTGRES_URL!)
+  const sql = getDb()
 
   try {
     await sql`
