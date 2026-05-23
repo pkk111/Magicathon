@@ -1,0 +1,11 @@
+{
+  "framework": "vite",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "rewrites": [
+    { "source": "/m/:id", "destination": "/index.html" }
+  ],
+  "functions": {
+    "api/suggest.ts": { "maxDuration": 30 }
+  }
+}

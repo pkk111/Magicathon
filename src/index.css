@@ -1,0 +1,18 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ink: #0c0c0a;
+  --color-paper: #f4f1e8;
+  --color-acid: #c6f24e;
+}
+
+@font-face {
+  font-family: 'Impact';
+  src: local('Impact');
+  font-display: swap;
+}
+
+body {
+  font-family: 'Montserrat', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
