@@ -11,7 +11,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: 'Missing meme id', code: 'MISSING_ID' })
   }
 
-  const sql = postgres(process.env.DATABASE_URL!)
+  const sql = postgres(process.env.POSTGRES_URL!)
 
   try {
     const rows = await sql`

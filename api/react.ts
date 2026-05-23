@@ -23,7 +23,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const ua = req.headers['user-agent'] || 'unknown'
   const fingerprint = createHash('sha256').update(`${ip}:${ua}`).digest('hex').slice(0, 16)
 
-  const sql = postgres(process.env.DATABASE_URL!)
+  const sql = postgres(process.env.POSTGRES_URL!)
 
   try {
     const existing = await sql`
