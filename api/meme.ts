@@ -17,18 +17,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     const memeId = nanoid(10)
-    const reactions = { laugh: 0, fire: 0, 'cry-laugh': 0, '100': 0, skull: 0, heart: 0 }
+    const defaultReactions = '{"laugh":0,"fire":0,"cry-laugh":0,"100":0,"skull":0,"heart":0}'
 
-    await sql`
-      INSERT INTO memes (id, image_url, exported_png_url, text_fields, reactions, total_reactions, session_id)
-      VALUES (${memeId}, ${imageUrl}, ${exportedPngUrl}, ${JSON.stringify(textFields || [])}, ${JSON.stringify(reactions)}, 0, ${sessionId || null})
-    `
+    await sql.unsafe(
+      `INSERT INTO memes (id, image_url, exported_png_url, text_fields, reactions, total_reactions, session_id)
+       VALUES ($1, $2, $3, $4::jsonb, $5::jsonb, 0, $6)`,
+      [memeId, imageUrl, exportedPngUrl, JSON.stringify(textFields || []), defaultReactions, sessionId || null]
+    )
 
     const baseUrl = process.env.VERCEL_URL
       ? `https://${process.env.VERCEL_URL}`
       : 'http://localhost:3000'
 
-    await sql.end()
     return res.status(200).json({
       memeId,
       shareUrl: `${baseUrl}/m/${memeId}`,
@@ -36,7 +36,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     })
   } catch (e) {
     console.error('Meme save error:', e)
-    await sql.end()
     return res.status(500).json({ error: 'Failed to save meme', code: 'SAVE_ERROR' })
   }
 }

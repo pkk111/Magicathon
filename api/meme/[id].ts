@@ -20,24 +20,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     `
 
     if (rows.length === 0) {
-      await sql.end()
       return res.status(404).json({ error: 'Meme not found', code: 'NOT_FOUND' })
     }
 
     const meme = rows[0]!
-    await sql.end()
     return res.status(200).json({
       memeId: meme.id,
       imageUrl: meme.image_url,
       exportedPngUrl: meme.exported_png_url,
       textFields: meme.text_fields,
-      reactions: meme.reactions,
+      reactions: typeof meme.reactions === 'string' ? JSON.parse(meme.reactions) : meme.reactions,
       totalReactions: meme.total_reactions,
       createdAt: meme.created_at,
     })
   } catch (e) {
     console.error('Meme fetch error:', e)
-    await sql.end()
     return res.status(500).json({ error: 'Failed to fetch meme', code: 'FETCH_ERROR' })
   }
 }

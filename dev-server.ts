@@ -67,12 +67,18 @@ app.post('/api/meme', async (req, res) => {
 })
 
 app.get('/api/meme/:id', async (req, res) => {
-  (req as any).query = { id: req.params.id }
+  const fakeReq = Object.create(req, {
+    query: { value: { id: req.params.id }, writable: true, enumerable: true }
+  })
   const handler = await loadHandler('./api/meme/[id].ts')
-  handler(req, res)
+  handler(fakeReq, res)
 })
 
 // React
+app.get('/api/react', async (req, res) => {
+  const handler = await loadHandler('./api/react.ts')
+  handler(req, res)
+})
 app.post('/api/react', async (req, res) => {
   const handler = await loadHandler('./api/react.ts')
   handler(req, res)
@@ -81,6 +87,12 @@ app.post('/api/react', async (req, res) => {
 // Feed
 app.get('/api/feed', async (req, res) => {
   const handler = await loadHandler('./api/feed.ts')
+  handler(req, res)
+})
+
+// Reaction status
+app.get('/api/reaction-status', async (req, res) => {
+  const handler = await loadHandler('./api/reaction-status.ts')
   handler(req, res)
 })
 

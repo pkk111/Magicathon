@@ -49,8 +49,8 @@ export default function MemePreviewCard({ suggestion, imageUrl, selected, onSele
       `}
       style={{ aspectRatio: '16/9' }}
     >
-      <Stage width={containerWidth} height={displayHeight} scaleX={scale} scaleY={scale}>
-        <Layer>
+      <Stage width={containerWidth} height={displayHeight} scaleX={scale} scaleY={scale} listening={false} style={{ pointerEvents: 'none' }}>
+        <Layer listening={false}>
           {image && (
             <KonvaImage image={image} width={CANVAS_W} height={CANVAS_H} />
           )}

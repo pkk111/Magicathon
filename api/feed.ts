@@ -25,17 +25,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const memes = rows.slice(0, limit).map(row => ({
       memeId: row.id,
       exportedPngUrl: row.exported_png_url,
-      reactions: row.reactions,
+      reactions: typeof row.reactions === 'string' ? JSON.parse(row.reactions) : row.reactions,
       totalReactions: row.total_reactions,
       createdAt: row.created_at,
       sessionId: row.session_id,
     }))
 
-    await sql.end()
     return res.status(200).json({ memes, hasMore })
   } catch (e) {
     console.error('Feed error:', e)
-    await sql.end()
     return res.status(500).json({ error: 'Failed to load feed', code: 'FEED_ERROR' })
   }
 }

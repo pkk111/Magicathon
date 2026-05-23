@@ -82,18 +82,40 @@ export default function FeedPage() {
                 />
               </a>
               <div className="p-3">
-                <ReactionBar
-                  memeId={meme.memeId}
-                  reactions={meme.reactions}
-                  onReactionsUpdate={(updated) => {
-                    setMemes(prev => prev.map(m =>
-                      m.memeId === meme.memeId ? { ...m, reactions: updated } : m
-                    ))
-                  }}
-                />
-                <p className="text-paper/30 text-xs mt-2">
-                  {new Date(meme.createdAt).toLocaleDateString()}
+                <p className="text-paper/30 text-xs mb-2">
+                  {new Date(meme.createdAt).toLocaleString()}
                 </p>
+                <div className="flex items-center gap-2">
+                  <div className="flex-1">
+                    <ReactionBar
+                      memeId={meme.memeId}
+                      reactions={meme.reactions}
+                      onReactionsUpdate={(updated) => {
+                        setMemes(prev => prev.map(m =>
+                          m.memeId === meme.memeId ? { ...m, reactions: updated } : m
+                        ))
+                      }}
+                    />
+                  </div>
+                  <button
+                    onClick={async () => {
+                      const url = `${window.location.origin}/m/${meme.memeId}`
+                      if (navigator.share) {
+                        try {
+                          await navigator.share({ title: 'Check out this meme!', url })
+                        } catch { /* cancelled */ }
+                      } else {
+                        try {
+                          await navigator.clipboard.writeText(url)
+                        } catch { /* fallback */ }
+                      }
+                    }}
+                    className="px-3 py-2 rounded-full border border-paper/20 text-paper/70 hover:border-acid hover:text-acid transition-colors text-lg"
+                    title="Share"
+                  >
+                    📤
+                  </button>
+                </div>
               </div>
             </div>
           ))}

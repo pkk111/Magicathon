@@ -33,11 +33,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       )
     `
 
-    await sql.end()
     return res.status(200).json({ success: true, message: 'Tables created' })
   } catch (e) {
     console.error('DB setup error:', e)
-    await sql.end()
     return res.status(500).json({ error: 'Failed to set up database', details: String(e) })
   }
 }
