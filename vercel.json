@@ -6,6 +6,9 @@
     { "source": "/m/:id", "destination": "/index.html" }
   ],
   "functions": {
-    "api/suggest.ts": { "maxDuration": 30 }
+    "api/**/*.ts": {
+      "includeFiles": "api/lib/**",
+      "maxDuration": 30
+    }
   }
 }
